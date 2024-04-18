@@ -1,5 +1,7 @@
 package io.emeraldpay.polkaj.scaletypes;
 
+import io.emeraldpay.polkaj.scaletypes.v14.Lookup;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -16,6 +18,7 @@ public class MetadataV14 {
     private Integer magic;
     private Integer version;
     private List<Pallet> pallets;
+    private Lookup lookup;
 
     public Integer getMagic() {
         return magic;
@@ -55,6 +58,14 @@ public class MetadataV14 {
                 .flatMap((m) -> m.findCall(callName));
     }
 
+    public Lookup getLookup() {
+        return lookup;
+    }
+
+    public void setLookup(Lookup lookup) {
+        this.lookup = lookup;
+    }
+
     @Override
     public final boolean equals(Object o) {
         if (this == o) return true;
@@ -78,6 +89,19 @@ public class MetadataV14 {
         private List<Constant> constants;
         private List<Error> errors;
         private Integer index;
+
+        @Override
+        public String toString() {
+            return "Pallet{" +
+                    "name='" + name + '\'' +
+                    ", storage=" + storage +
+                    ", calls=" + calls +
+                    ", events=" + events +
+                    ", constants=" + constants +
+                    ", errors=" + errors +
+                    ", index=" + index +
+                    '}';
+        }
 
         public String getName() {
             return name;
@@ -198,6 +222,14 @@ public class MetadataV14 {
             return Objects.hash(prefix, entries);
         }
 
+        @Override
+        public String toString() {
+            return "Storage{" +
+                    "prefix='" + prefix + '\'' +
+                    ", entries=" + entries +
+                    '}';
+        }
+
         public static class Entry {
             private String name;
             private Modifier modifier;
@@ -262,6 +294,17 @@ public class MetadataV14 {
                 int result = Objects.hash(name, modifier, type, documentation);
                 result = 31 * result + Arrays.hashCode(defaults);
                 return result;
+            }
+
+            @Override
+            public String toString() {
+                return "Entry{" +
+                        "name='" + name + '\'' +
+                        ", modifier=" + modifier +
+                        ", type=" + type +
+                        ", defaults=" + Arrays.toString(defaults) +
+                        ", documentation=" + documentation +
+                        '}';
             }
         }
 
@@ -490,6 +533,16 @@ public class MetadataV14 {
         private List<Arg> arguments;
         private List<String> documentation;
 
+        @Override
+        public String toString() {
+            return "Call{" +
+                    "index=" + index +
+                    ", name='" + name + '\'' +
+                    ", arguments=" + arguments +
+                    ", documentation=" + documentation +
+                    '}';
+        }
+
         public int getIndex() {
             return index;
         }
@@ -579,6 +632,15 @@ public class MetadataV14 {
         private List<String> arguments;
         private List<String> documentation;
 
+        @Override
+        public String toString() {
+            return "Event{" +
+                    "name='" + name + '\'' +
+                    ", arguments=" + arguments +
+                    ", documentation=" + documentation +
+                    '}';
+        }
+
         public String getName() {
             return name;
         }
@@ -624,6 +686,16 @@ public class MetadataV14 {
         private String type;
         private byte[] value;
         private List<String> documentation;
+
+        @Override
+        public String toString() {
+            return "Constant{" +
+                    "name='" + name + '\'' +
+                    ", type='" + type + '\'' +
+                    ", value=" + Arrays.toString(value) +
+                    ", documentation=" + documentation +
+                    '}';
+        }
 
         public String getName() {
             return name;
@@ -679,6 +751,14 @@ public class MetadataV14 {
     public static class Error {
         private String name;
         private List<String> documentation;
+
+        @Override
+        public String toString() {
+            return "Error{" +
+                    "name='" + name + '\'' +
+                    ", documentation=" + documentation +
+                    '}';
+        }
 
         public String getName() {
             return name;

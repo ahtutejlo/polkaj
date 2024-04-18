@@ -7,8 +7,16 @@ public class Lookup {
     private List<Type> types;
 
     public static class Type {
-        private int id;
+        private Integer id;
         private TypeInfo type;
+
+        @Override
+        public String toString() {
+            return "Type{" +
+                    "id=" + id +
+                    ", type=" + type +
+                    '}';
+        }
 
         public static class TypeInfo {
             private List<String> path;
@@ -16,16 +24,31 @@ public class Lookup {
             private Definition def;
             private List<String> docs;
 
+            @Override
+            public String toString() {
+                return "TypeInfo{" +
+                        "path=" + path +
+                        ", params=" + params +
+                        ", def=" + def +
+                        ", docs=" + docs +
+                        '}';
+            }
+
             public static class Param {
                 private String name;
-                private int type;
+                private Integer type;
+                private Boolean hasType;
 
-                public Param() {
+                @Override
+                public String toString() {
+                    return "Param{" +
+                            "name='" + name + '\'' +
+                            ", type=" + type +
+                            ", hasType=" + hasType +
+                            '}';
                 }
 
-                public Param(String name, int type) {
-                    this.name = name;
-                    this.type = type;
+                public Param() {
                 }
 
                 public String getName() {
@@ -43,28 +66,205 @@ public class Lookup {
                 public void setType(int type) {
                     this.type = type;
                 }
+
+                public Boolean getHasType() {
+                    return hasType;
+                }
+
+                public void setHasType(Boolean hasType) {
+                    this.hasType = hasType;
+                }
+
             }
 
             public static class Definition {
                 private Composite composite;
                 private Array array;
                 private Primitive primitive;
+                private Compact compact;
+                private Sequence sequence;
+                private Variant variant;
+                private Tuple tuple;
+
+                @Override
+                public String toString() {
+                    return "Definition{" +
+                            "composite=" + composite +
+                            ", array=" + array +
+                            ", primitive=" + primitive +
+                            ", compact=" + compact +
+                            '}';
+                }
+
+                public static class Tuple {
+                    private List<Integer> types;
+
+                    @Override
+                    public String toString() {
+                        return "Tuple{" +
+                                "types=" + types +
+                                '}';
+                    }
+
+                    public Tuple() {}
+
+                    public List<Integer> getTypes() {
+                        return types;
+                    }
+
+                    public Tuple setTypes(List<Integer> types) {
+                        this.types = types;
+                        return this;
+                    }
+                }
+
+                public static class Variant {
+                    private List<TypeDefVariant> variants;
+
+                    @Override
+                    public String toString() {
+                        return "Variant{" +
+                                "variants=" + variants +
+                                '}';
+                    }
+
+                    public Variant() {
+                    }
+
+                    public List<TypeDefVariant> getVariants() {
+                        return variants;
+                    }
+
+                    public void setVariants(List<TypeDefVariant> variants) {
+                        this.variants = variants;
+                    }
+
+                    public static class TypeDefVariant {
+                        private String name;
+                        private List<Composite.Field> fields;
+                        private int index;
+                        private List<String> docs;
+
+                        @Override
+                        public String toString() {
+                            return "TypeDefVariant{" +
+                                    "name='" + name + '\'' +
+                                    ", fields=" + fields +
+                                    ", index=" + index +
+                                    ", docs=" + docs +
+                                    '}';
+                        }
+
+                        public TypeDefVariant() {
+                        }
+
+                        public String getName() {
+                            return name;
+                        }
+
+                        public void setName(String name) {
+                            this.name = name;
+                        }
+
+                        public List<Composite.Field> getFields() {
+                            return fields;
+                        }
+
+                        public void setFields(List<Composite.Field> fields) {
+                            this.fields = fields;
+                        }
+
+                        public int getIndex() {
+                            return index;
+                        }
+
+                        public void setIndex(int index) {
+                            this.index = index;
+                        }
+
+                        public List<String> getDocs() {
+                            return docs;
+                        }
+
+                        public void setDocs(List<String> docs) {
+                            this.docs = docs;
+                        }
+                    }
+                }
+
+                public static class Sequence {
+                    private int type;
+
+                    @Override
+                    public String toString() {
+                        return "Sequence{" +
+                                "type=" + type +
+                                '}';
+                    }
+
+                    public Sequence() {}
+
+                    public int getType() {
+                        return type;
+                    }
+
+                    public void setType(int type) {
+                        this.type = type;
+                    }
+                }
+
+                public static class Compact {
+                    private int type;
+
+                    @Override
+                    public String toString() {
+                        return "Compact{" +
+                                "type=" + type +
+                                '}';
+                    }
+
+                    public Compact() {}
+
+                    public int getType() {
+                        return type;
+                    }
+
+                    public void setType(int type) {
+                        this.type = type;
+                    }
+                }
 
                 public static class Composite {
                     private List<Field> fields;
 
+                    @Override
+                    public String toString() {
+                        return "Composite{" +
+                                "fields=" + fields +
+                                '}';
+                    }
+
                     public static class Field {
+                        private Boolean hasName;
                         private String name;
                         private int type;
+                        private Boolean hasTypeName;
                         private String typeName;
                         private List<String> docs;
 
-                        public Field(String name, int type, String typeName, List<String> docs) {
-                            this.name = name;
-                            this.type = type;
-                            this.typeName = typeName;
-                            this.docs = docs;
+                        @Override
+                        public String toString() {
+                            return "Field{" +
+                                    "hasName=" + hasName +
+                                    ", name='" + name + '\'' +
+                                    ", type=" + type +
+                                    ", hasTypeName=" + hasTypeName +
+                                    ", typeName='" + typeName + '\'' +
+                                    ", docs=" + docs +
+                                    '}';
                         }
+
+                        public Field() {}
 
                         public String getName() {
                             return name;
@@ -97,11 +297,25 @@ public class Lookup {
                         public void setDocs(List<String> docs) {
                             this.docs = docs;
                         }
+
+                        public Boolean getHasName() {
+                            return hasName;
+                        }
+
+                        public void setHasName(Boolean hasName) {
+                            this.hasName = hasName;
+                        }
+
+                        public Boolean getHasTypeName() {
+                            return hasTypeName;
+                        }
+
+                        public void setHasTypeName(Boolean hasTypeName) {
+                            this.hasTypeName = hasTypeName;
+                        }
                     }
 
-                    public Composite(List<Field> fields) {
-                        this.fields = fields;
-                    }
+                    public Composite() {}
 
                     public List<Field> getFields() {
                         return fields;
@@ -113,19 +327,24 @@ public class Lookup {
                 }
 
                 public static class Array {
-                    private Integer len;
+                    private Long len;
                     private Integer type;
 
-                    public Array(int len, int type) {
-                        this.len = len;
-                        this.type = type;
+                    @Override
+                    public String toString() {
+                        return "Array{" +
+                                "len=" + len +
+                                ", type=" + type +
+                                '}';
                     }
 
-                    public int getLen() {
+                    public Array() {}
+
+                    public long getLen() {
                         return len;
                     }
 
-                    public void setLen(int len) {
+                    public void setLen(long len) {
                         this.len = len;
                     }
 
@@ -139,26 +358,27 @@ public class Lookup {
                 }
 
                 public static class Primitive {
-                    private String primitive;
+                    private byte primitive;
 
-                    public Primitive(String primitive) {
-                        this.primitive = primitive;
+                    @Override
+                    public String toString() {
+                        return "Primitive{" +
+                                "primitive=" + primitive +
+                                '}';
                     }
 
-                    public String getPrimitive() {
+                    public Primitive() {}
+
+                    public byte getPrimitive() {
                         return primitive;
                     }
 
-                    public void setPrimitive(String primitive) {
+                    public void setPrimitive(byte primitive) {
                         this.primitive = primitive;
                     }
                 }
 
-                public Definition(Composite composite, Array array, Primitive primitive) {
-                    this.composite = composite;
-                    this.array = array;
-                    this.primitive = primitive;
-                }
+//                public Definition() {}
 
                 public Composite getComposite() {
                     return composite;
@@ -183,14 +403,41 @@ public class Lookup {
                 public void setPrimitive(Primitive primitive) {
                     this.primitive = primitive;
                 }
+
+                public Compact getCompact() {
+                    return compact;
+                }
+
+                public void setCompact(Compact compact) {
+                    this.compact = compact;
+                }
+
+                public Sequence getSequence() {
+                    return sequence;
+                }
+
+                public void setSequence(Sequence sequence) {
+                    this.sequence = sequence;
+                }
+
+                public Variant getVariant() {
+                    return variant;
+                }
+
+                public void setVariant(Variant variant) {
+                    this.variant = variant;
+                }
+
+                public Tuple getTuple() {
+                    return tuple;
+                }
+
+                public void setTuple(Tuple tuple) {
+                    this.tuple = tuple;
+                }
             }
 
-            public TypeInfo(List<String> path, List<Param> params, Definition def, List<String> docs) {
-                this.path = path;
-                this.params = params;
-                this.def = def;
-                this.docs = docs;
-            }
+            public TypeInfo() {}
 
             public List<String> getPath() {
                 return path;
@@ -225,16 +472,13 @@ public class Lookup {
             }
         }
 
-        public Type(int id, TypeInfo type) {
-            this.id = id;
-            this.type = type;
-        }
+        public Type() {}
 
-        public int getId() {
+        public Integer getId() {
             return id;
         }
 
-        public void setId(int id) {
+        public void setId(Integer id) {
             this.id = id;
         }
 

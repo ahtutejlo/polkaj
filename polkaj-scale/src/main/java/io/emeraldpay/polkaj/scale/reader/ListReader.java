@@ -19,7 +19,9 @@ public class ListReader<T> implements ScaleReader<List<T>> {
         int size = rdr.readCompactInt();
         List<T> result = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
-            result.add(rdr.read(scaleReader));
+            T read = rdr.read(scaleReader);
+            System.out.println("ListReader: " + read);
+            result.add(read);
         }
         return result;
     }
