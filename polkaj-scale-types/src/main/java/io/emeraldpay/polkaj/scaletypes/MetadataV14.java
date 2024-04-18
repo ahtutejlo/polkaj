@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Runtime Metadata, which defines all available actions and types for the blockchain.
@@ -19,6 +20,34 @@ public class MetadataV14 {
     private Integer version;
     private List<Pallet> pallets;
     private Lookup lookup;
+
+    public byte[] findCallIndex(String palletName, String call) {
+        AtomicReference<Integer> callTypeRef = new AtomicReference<>();
+        AtomicReference<Integer> callIndexRef = new AtomicReference<>();
+        pallets.forEach(pallet -> {
+            System.out.println(pallet.getName());
+            if (pallet.getName().equals(palletName)) {
+                callTypeRef.set(pallet.getIndex());
+            }
+        });
+        lookup.getTypes().forEach(type -> {
+            if (type.getId().equals(callTypeRef.get())) {
+                Lookup.Type.TypeInfo.Definition def = type.getType().getDef();
+                if (def.getVariant() != null) {
+                    List<Lookup.Type.TypeInfo.Definition.Variant.TypeDefVariant> variants = def.getVariant().getVariants();
+                    variants.forEach(variant -> {
+                        if (variant.getName().equals(call)) {
+                            callIndexRef.set(variant.getIndex());
+                        }
+                    });
+                }
+            }
+        });
+        byte[] bytes = new byte[2];
+        bytes[0] = callTypeRef.get().byteValue();
+        bytes[1] = callIndexRef.get().byteValue();
+        return bytes;
+    }
 
     public Integer getMagic() {
         return magic;
@@ -53,11 +82,6 @@ public class MetadataV14 {
                 .findAny();
     }
 
-    public Optional<Call> findCall(String moduleName, String callName) {
-        return findPallet(moduleName)
-                .flatMap((m) -> m.findCall(callName));
-    }
-
     public Lookup getLookup() {
         return lookup;
     }
@@ -84,17 +108,27 @@ public class MetadataV14 {
     public static class Pallet {
         private String name;
         private Storage storage;
-        private List<Call> calls;
-        private List<Event> events;
+        private Integer call;
+        private Calls calls;
+        private Events events;
         private List<Constant> constants;
-        private List<Error> errors;
+        private Errors errors;
         private Integer index;
+
+        public Integer getCall() {
+            return call;
+        }
+
+        public void setCall(Integer call) {
+            this.call = call;
+        }
 
         @Override
         public String toString() {
             return "Pallet{" +
                     "name='" + name + '\'' +
                     ", storage=" + storage +
+                    ", call=" + call +
                     ", calls=" + calls +
                     ", events=" + events +
                     ", constants=" + constants +
@@ -119,19 +153,19 @@ public class MetadataV14 {
             this.storage = storage;
         }
 
-        public List<Call> getCalls() {
+        public Calls getCalls() {
             return calls;
         }
 
-        public void setCalls(List<Call> calls) {
+        public void setCalls(Calls calls) {
             this.calls = calls;
         }
 
-        public List<Event> getEvents() {
+        public Events getEvents() {
             return events;
         }
 
-        public void setEvents(List<Event> events) {
+        public void setEvents(Events events) {
             this.events = events;
         }
 
@@ -143,11 +177,11 @@ public class MetadataV14 {
             this.constants = constants;
         }
 
-        public List<Error> getErrors() {
+        public Errors getErrors() {
             return errors;
         }
 
-        public void setErrors(List<Error> errors) {
+        public void setErrors(Errors errors) {
             this.errors = errors;
         }
 
@@ -157,15 +191,6 @@ public class MetadataV14 {
 
         public void setIndex(Integer index) {
             this.index = index;
-        }
-
-        public Optional<Call> findCall(String name) {
-            if (calls == null) {
-                return Optional.empty();
-            }
-            return calls.stream()
-                    .filter(it -> it.getName().equals(name))
-                    .findAny();
         }
 
         @Override
@@ -309,7 +334,7 @@ public class MetadataV14 {
         }
 
         public static enum Modifier {
-            OPTIONAL, DEFAULT, REQUIRED
+            OPTIONAL, DEFAULT
         }
 
         public static enum Hasher {
@@ -323,7 +348,7 @@ public class MetadataV14 {
         }
 
         public static enum TypeId {
-            PLAIN(String.class),
+            PLAIN(Integer.class),
             MAP(MapDefinition.class),
             DOUBLEMAP(DoubleMapDefinition.class);
 
@@ -371,10 +396,17 @@ public class MetadataV14 {
             public final int hashCode() {
                 return Objects.hash(value);
             }
+
+            @Override
+            public String toString() {
+                return "Type{" +
+                        "value=" + value +
+                        '}';
+            }
         }
 
-        public static class PlainType extends Type<String> {
-            public PlainType(String value) {
+        public static class PlainType extends Type<Integer> {
+            public PlainType(Integer value) {
                 super(value);
             }
 
@@ -385,57 +417,41 @@ public class MetadataV14 {
         }
 
         public static class MapDefinition {
-            private Hasher hasher;
-            private String key;
-            private String type;
-            private boolean iterable;
+            private List<Integer> hashers;
+            private Integer key;
+            private Integer value;
 
-            public Hasher getHasher() {
-                return hasher;
+            public List<Integer> getHashers() {
+                return hashers;
             }
 
-            public void setHasher(Hasher hasher) {
-                this.hasher = hasher;
+            public void setHashers(List<Integer> hashers) {
+                this.hashers = hashers;
             }
 
-            public String getKey() {
+            public Integer getKey() {
                 return key;
             }
 
-            public void setKey(String key) {
+            public void setKey(Integer key) {
                 this.key = key;
             }
 
-            public String getType() {
-                return type;
+            public Integer getValue() {
+                return value;
             }
 
-            public void setType(String type) {
-                this.type = type;
-            }
-
-            public boolean isIterable() {
-                return iterable;
-            }
-
-            public void setIterable(boolean iterable) {
-                this.iterable = iterable;
+            public void setValue(Integer value) {
+                this.value = value;
             }
 
             @Override
-            public final boolean equals(Object o) {
-                if (this == o) return true;
-                if (!(o instanceof MapDefinition)) return false;
-                MapDefinition that = (MapDefinition) o;
-                return iterable == that.iterable &&
-                        hasher == that.hasher &&
-                        Objects.equals(key, that.key) &&
-                        Objects.equals(type, that.type);
-            }
-
-            @Override
-            public final int hashCode() {
-                return Objects.hash(hasher, key, type, iterable);
+            public String toString() {
+                return "MapDefinition{" +
+                        "hashers=" + hashers +
+                        ", key=" + key +
+                        ", value=" + value +
+                        '}';
             }
         }
 
@@ -527,175 +543,50 @@ public class MetadataV14 {
         }
     }
 
-    public static class Call {
-        private int index;
-        private String name;
-        private List<Arg> arguments;
-        private List<String> documentation;
+
+    public static class Calls {
+        private int type;
 
         @Override
         public String toString() {
-            return "Call{" +
-                    "index=" + index +
-                    ", name='" + name + '\'' +
-                    ", arguments=" + arguments +
-                    ", documentation=" + documentation +
+            return "Calls{" +
+                    "index=" + type +
                     '}';
         }
 
-        public int getIndex() {
-            return index;
+        public int getType() {
+            return type;
         }
 
-        public void setIndex(int index) {
-            this.index = index;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public List<Arg> getArguments() {
-            return arguments;
-        }
-
-        public void setArguments(List<Arg> arguments) {
-            this.arguments = arguments;
-        }
-
-        public List<String> getDocumentation() {
-            return documentation;
-        }
-
-        public void setDocumentation(List<String> documentation) {
-            this.documentation = documentation;
-        }
-
-        @Override
-        public final boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof Call)) return false;
-            Call call = (Call) o;
-            return Objects.equals(name, call.name) &&
-                    Objects.equals(index, call.index) &&
-                    Objects.equals(arguments, call.arguments) &&
-                    Objects.equals(documentation, call.documentation);
-        }
-
-        @Override
-        public final int hashCode() {
-            return Objects.hash(name, index, arguments, documentation);
-        }
-
-        public static class Arg {
-            private String name;
-            private String type;
-
-            public String getName() {
-                return name;
-            }
-
-            public void setName(String name) {
-                this.name = name;
-            }
-
-            public String getType() {
-                return type;
-            }
-
-            public void setType(String type) {
-                this.type = type;
-            }
-
-            @Override
-            public final boolean equals(Object o) {
-                if (this == o) return true;
-                if (!(o instanceof Arg)) return false;
-                Arg arg = (Arg) o;
-                return Objects.equals(name, arg.name) &&
-                        Objects.equals(type, arg.type);
-            }
-
-            @Override
-            public final int hashCode() {
-                return Objects.hash(name, type);
-            }
+        public void setType(int type) {
+            this.type = type;
         }
     }
 
-    public static class Event {
-        private String name;
-        private List<String> arguments;
-        private List<String> documentation;
+    public static class Events {
+        private int type;
 
         @Override
         public String toString() {
-            return "Event{" +
-                    "name='" + name + '\'' +
-                    ", arguments=" + arguments +
-                    ", documentation=" + documentation +
+            return "Events{" +
+                    "index=" + type +
                     '}';
         }
 
-        public String getName() {
-            return name;
+        public int getType() {
+            return type;
         }
 
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public List<String> getArguments() {
-            return arguments;
-        }
-
-        public void setArguments(List<String> arguments) {
-            this.arguments = arguments;
-        }
-
-        public List<String> getDocumentation() {
-            return documentation;
-        }
-
-        public void setDocumentation(List<String> documentation) {
-            this.documentation = documentation;
-        }
-
-        @Override
-        public final boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof Event)) return false;
-            Event event = (Event) o;
-            return Objects.equals(name, event.name) &&
-                    Objects.equals(arguments, event.arguments) &&
-                    Objects.equals(documentation, event.documentation);
-        }
-
-        @Override
-        public final int hashCode() {
-            return Objects.hash(name, arguments, documentation);
+        public void setType(int type) {
+            this.type = type;
         }
     }
 
     public static class Constant {
         private String name;
-        private String type;
+        private Integer type;
         private byte[] value;
-        private List<String> documentation;
-
-        @Override
-        public String toString() {
-            return "Constant{" +
-                    "name='" + name + '\'' +
-                    ", type='" + type + '\'' +
-                    ", value=" + Arrays.toString(value) +
-                    ", documentation=" + documentation +
-                    '}';
-        }
+        private List<String> docs;
 
         public String getName() {
             return name;
@@ -705,11 +596,11 @@ public class MetadataV14 {
             this.name = name;
         }
 
-        public String getType() {
+        public Integer getType() {
             return type;
         }
 
-        public void setType(String type) {
+        public void setType(Integer type) {
             this.type = type;
         }
 
@@ -721,12 +612,12 @@ public class MetadataV14 {
             this.value = value;
         }
 
-        public List<String> getDocumentation() {
-            return documentation;
+        public List<String> getDocs() {
+            return docs;
         }
 
-        public void setDocumentation(List<String> documentation) {
-            this.documentation = documentation;
+        public void setDocs(List<String> docs) {
+            this.docs = docs;
         }
 
         @Override
@@ -737,57 +628,43 @@ public class MetadataV14 {
             return Objects.equals(name, constant.name) &&
                     Objects.equals(type, constant.type) &&
                     Arrays.equals(value, constant.value) &&
-                    Objects.equals(documentation, constant.documentation);
+                    Objects.equals(docs, constant.docs);
         }
 
         @Override
         public final int hashCode() {
-            int result = Objects.hash(name, type, documentation);
+            int result = Objects.hash(name, type, docs);
             result = 31 * result + Arrays.hashCode(value);
             return result;
         }
+
+        @Override
+        public String toString() {
+            return "Constant{" +
+                    "name='" + name + '\'' +
+                    ", type=" + type +
+                    ", value=" + Arrays.toString(value) +
+                    ", docs=" + docs +
+                    '}';
+        }
     }
 
-    public static class Error {
-        private String name;
-        private List<String> documentation;
+    public static class Errors {
+        private int type;
 
         @Override
         public String toString() {
             return "Error{" +
-                    "name='" + name + '\'' +
-                    ", documentation=" + documentation +
+                    "type=" + type +
                     '}';
         }
 
-        public String getName() {
-            return name;
+        public int getType() {
+            return type;
         }
 
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public List<String> getDocumentation() {
-            return documentation;
-        }
-
-        public void setDocumentation(List<String> documentation) {
-            this.documentation = documentation;
-        }
-
-        @Override
-        public final boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof Error)) return false;
-            Error error = (Error) o;
-            return Objects.equals(name, error.name) &&
-                    Objects.equals(documentation, error.documentation);
-        }
-
-        @Override
-        public final int hashCode() {
-            return Objects.hash(name, documentation);
+        public void setType(int type) {
+            this.type = type;
         }
     }
 

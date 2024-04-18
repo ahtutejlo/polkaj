@@ -18,7 +18,8 @@ public class MetadataV14Reader implements ScaleReader<MetadataV14> {
     public static final LookupReader LOOKUP_READER = new LookupReader();
     public static final ListReader<String> STRING_LIST_READER = new ListReader<>(ScaleCodecReader.STRING);
     public static final ListReader<Integer> INT_LIST_READER = new ListReader<>(ScaleCodecReader.COMPACT_UINT);
-    public static final EnumReader<MetadataV14.Storage.Hasher> HASHER_ENUM_READER = new EnumReader<>(MetadataV14.Storage.Hasher.values());
+    public static final ListReader<Integer> BYTE_LIST_READER = new ListReader<>(ScaleCodecReader.UBYTE);
+    public static final ListReader<BigInteger> BIG_INT_LIST_READER = new ListReader<>(ScaleCodecReader.COMPACT_BIGINT);
 
     @Override
     public MetadataV14 read(ScaleCodecReader rdr) {
@@ -32,14 +33,14 @@ public class MetadataV14Reader implements ScaleReader<MetadataV14> {
         result.setPallets(PALLET_LIST_READER.read(rdr));
         List<MetadataV14.Pallet> modules = result.getPallets();
 
-        for (MetadataV14.Pallet m : modules) {
-            List<MetadataV14.Call> calls = m.getCalls();
-            if (calls != null) {
-                for (int j = 0; j < calls.size(); j++) {
-                    calls.get(j).setIndex((m.getIndex() << 8) + j);
-                }
-            }
-        }
+//        for (MetadataV14.Pallet m : modules) {
+//            List<MetadataV14.Calls> calls = m.getCalls();
+//            if (calls != null) {
+//                for (int j = 0; j < calls.size(); j++) {
+//                    calls.get(j).setType((m.getIndex() << 8) + j);
+//                }
+//            }
+//        }
         return result;
     }
 
@@ -246,21 +247,21 @@ public class MetadataV14Reader implements ScaleReader<MetadataV14> {
     static class PalletsReader implements ScaleReader<MetadataV14.Pallet> {
 
         public static final MetadataV14Reader.StorageReader STORAGE_READER = new MetadataV14Reader.StorageReader();
-        public static final ListReader<MetadataV14.Call> CALL_LIST_READER = new ListReader<>(new MetadataV14Reader.CallReader());
-        public static final ListReader<MetadataV14.Event> EVENT_LIST_READER = new ListReader<>(new MetadataV14Reader.EventReader());
+        public static final CallsReader CALLS_READER = new CallsReader();
+        public static final EventsReader EVENTS_READER = new EventsReader();
         public static final ListReader<MetadataV14.Constant> CONSTANT_LIST_READER = new ListReader<>(new MetadataV14Reader.ConstantReader());
-        public static final ListReader<MetadataV14.Error> ERROR_LIST_READER = new ListReader<>(new MetadataV14Reader.ErrorReader());
+        public static final MetadataV14Reader.ErrorsReader ERROR_READER = new MetadataV14Reader.ErrorsReader();
 
         @Override
         public MetadataV14.Pallet read(ScaleCodecReader rdr) {
             MetadataV14.Pallet result = new MetadataV14.Pallet();
             result.setName(rdr.readString());
-            System.out.println("Pallet name: " + result.getName());
+            System.out.println("\nPallet name: " + result.getName());
             rdr.readOptional(STORAGE_READER).ifPresent(result::setStorage);
-            rdr.readOptional(CALL_LIST_READER).ifPresent(result::setCalls);
-            rdr.readOptional(EVENT_LIST_READER).ifPresent(result::setEvents);
+            rdr.readOptional(CALLS_READER).ifPresent(result::setCalls);
+            rdr.readOptional(EVENTS_READER).ifPresent(result::setEvents);
             result.setConstants(CONSTANT_LIST_READER.read(rdr));
-            result.setErrors(ERROR_LIST_READER.read(rdr));
+            rdr.readOptional(ERROR_READER).ifPresent(result::setErrors);
             result.setIndex(rdr.readUByte());
             return result;
         }
@@ -311,8 +312,7 @@ public class MetadataV14Reader implements ScaleReader<MetadataV14> {
         @SuppressWarnings("unchecked")
         private static final UnionReader<MetadataV14.Storage.Type<?>> TYPE_UNION_READER = new UnionReader<>(
                 new MetadataV14Reader.TypePlainReader(),
-                new MetadataV14Reader.TypeMapReader(),
-                new MetadataV14Reader.TypeDoubleMapReader()
+                new MetadataV14Reader.TypeMapReader()
         );
 
         @Override
@@ -324,70 +324,50 @@ public class MetadataV14Reader implements ScaleReader<MetadataV14> {
     static class TypePlainReader implements ScaleReader<MetadataV14.Storage.PlainType> {
         @Override
         public MetadataV14.Storage.PlainType read(ScaleCodecReader rdr) {
-            return new MetadataV14.Storage.PlainType(rdr.readString());
+            return new MetadataV14.Storage.PlainType(rdr.read(ScaleCodecReader.COMPACT_BIGINT).intValue());
         }
     }
 
     static class TypeMapReader implements ScaleReader<MetadataV14.Storage.MapType> {
+        public static final EnumReader<MetadataV14.Storage.Hasher> HASHER_ENUM_READER = new EnumReader<>(MetadataV14.Storage.Hasher.values());
+
 
         @Override
         public MetadataV14.Storage.MapType read(ScaleCodecReader rdr) {
             MetadataV14.Storage.MapDefinition definition = new MetadataV14.Storage.MapDefinition();
-            definition.setHasher(HASHER_ENUM_READER.read(rdr));
-            definition.setKey(rdr.readString());
-            definition.setType(rdr.readString());
-            definition.setIterable(rdr.readBoolean());
+            definition.setHashers(BYTE_LIST_READER.read(rdr)); //todo enum
+            definition.setKey(rdr.read(ScaleCodecReader.COMPACT_BIGINT).intValue());
+            definition.setValue(rdr.read(ScaleCodecReader.COMPACT_BIGINT).intValue());
             return new MetadataV14.Storage.MapType(definition);
         }
     }
 
-    static class TypeDoubleMapReader implements ScaleReader<MetadataV14.Storage.DoubleMapType> {
+    static class CallsReader implements ScaleReader<MetadataV14.Calls> {
 
         @Override
-        public MetadataV14.Storage.DoubleMapType read(ScaleCodecReader rdr) {
-            MetadataV14.Storage.DoubleMapDefinition definition = new MetadataV14.Storage.DoubleMapDefinition();
-            definition.setFirstHasher(HASHER_ENUM_READER.read(rdr));
-            definition.setFirstKey(rdr.readString());
-            definition.setSecondKey(rdr.readString());
-            definition.setType(rdr.readString());
-            definition.setSecondHasher(HASHER_ENUM_READER.read(rdr));
-            return new MetadataV14.Storage.DoubleMapType(definition);
-        }
-    }
-
-    static class CallReader implements ScaleReader<MetadataV14.Call> {
-
-        public static final ListReader<MetadataV14.Call.Arg> ARG_LIST_READER = new ListReader<>(new MetadataV14Reader.ArgReader());
-
-        @Override
-        public MetadataV14.Call read(ScaleCodecReader rdr) {
-            MetadataV14.Call result = new MetadataV14.Call();
-            result.setName(rdr.readString());
-            result.setArguments(ARG_LIST_READER.read(rdr));
-            result.setDocumentation(STRING_LIST_READER.read(rdr));
+        public MetadataV14.Calls read(ScaleCodecReader rdr) {
+            MetadataV14.Calls result = new MetadataV14.Calls();
+            result.setType(rdr.read(ScaleCodecReader.COMPACT_BIGINT).intValue());
             return result;
         }
     }
 
-    static class ArgReader implements ScaleReader<MetadataV14.Call.Arg> {
+    static class EventsReader implements ScaleReader<MetadataV14.Events> {
 
         @Override
-        public MetadataV14.Call.Arg read(ScaleCodecReader rdr) {
-            MetadataV14.Call.Arg result = new MetadataV14.Call.Arg();
-            result.setName(rdr.readString());
-            result.setType(rdr.readString());
+        public MetadataV14.Events read(ScaleCodecReader rdr) {
+            MetadataV14.Events result = new MetadataV14.Events();
+            result.setType(rdr.read(ScaleCodecReader.COMPACT_BIGINT).intValue());
             return result;
         }
     }
 
-    static class EventReader implements ScaleReader<MetadataV14.Event> {
+    static class ErrorsReader implements ScaleReader<MetadataV14.Errors> {
 
         @Override
-        public MetadataV14.Event read(ScaleCodecReader rdr) {
-            MetadataV14.Event result = new MetadataV14.Event();
-            result.setName(rdr.readString());
-            result.setArguments(STRING_LIST_READER.read(rdr));
-            result.setDocumentation(STRING_LIST_READER.read(rdr));
+        public MetadataV14.Errors read(ScaleCodecReader rdr) {
+            MetadataV14.Errors result = new MetadataV14.Errors();
+            result.setType(rdr.read(ScaleCodecReader.COMPACT_BIGINT).intValue());
             return result;
         }
     }
@@ -398,21 +378,11 @@ public class MetadataV14Reader implements ScaleReader<MetadataV14> {
         public MetadataV14.Constant read(ScaleCodecReader rdr) {
             MetadataV14.Constant result = new MetadataV14.Constant();
             result.setName(rdr.readString());
-            result.setType(rdr.readString());
+            result.setType(rdr.read(ScaleCodecReader.COMPACT_BIGINT).intValue());
             result.setValue(rdr.readByteArray());
-            result.setDocumentation(STRING_LIST_READER.read(rdr));
+            result.setDocs(STRING_LIST_READER.read(rdr));
             return result;
         }
     }
 
-    static class ErrorReader implements ScaleReader<MetadataV14.Error> {
-
-        @Override
-        public MetadataV14.Error read(ScaleCodecReader rdr) {
-            MetadataV14.Error result = new MetadataV14.Error();
-            result.setName(rdr.readString());
-            result.setDocumentation(STRING_LIST_READER.read(rdr));
-            return result;
-        }
-    }
 }
