@@ -21,28 +21,41 @@ public class MetadataV14 {
     private List<Pallet> pallets;
     private Lookup lookup;
 
-    public byte[] findCallIndex(String palletName, String call) {
+    public byte[] findCallIndex(String palletName, String extrinsicName) {
         AtomicReference<Integer> callTypeRef = new AtomicReference<>();
         AtomicReference<Integer> callIndexRef = new AtomicReference<>();
         pallets.forEach(pallet -> {
-            System.out.println(pallet.getName());
             if (pallet.getName().equals(palletName)) {
                 callTypeRef.set(pallet.getIndex());
-            }
-        });
-        lookup.getTypes().forEach(type -> {
-            if (type.getId().equals(callTypeRef.get())) {
-                Lookup.Type.TypeInfo.Definition def = type.getType().getDef();
-                if (def.getVariant() != null) {
-                    List<Lookup.Type.TypeInfo.Definition.Variant.TypeDefVariant> variants = def.getVariant().getVariants();
-                    variants.forEach(variant -> {
-                        if (variant.getName().equals(call)) {
-                            callIndexRef.set(variant.getIndex());
-                        }
-                    });
+                if (pallet.getCalls() != null) {
+                    int type = pallet.getCalls().getType();
+                    lookup.getTypes().stream()
+                            .filter(t -> t.getId() == type)
+                            .findFirst()
+                            .ifPresentOrElse(t -> {
+                                Lookup.Type.TypeInfo.Definition def = t.getType().getDef();
+                                if (def.getVariant() != null) {
+                                    List<Lookup.Type.TypeInfo.Definition.Variant.TypeDefVariant> variants = def.getVariant().getVariants();
+                                    if (!variants.isEmpty()) {
+                                        variants.stream()
+                                                .filter(variant -> variant.getName().equals(extrinsicName))
+                                                .findFirst()
+                                                .ifPresentOrElse(variant -> callIndexRef.set(variant.getIndex()), () -> {
+                                                    throw new RuntimeException("Variant not found");
+                                                });
+                                    } else {
+                                        throw new RuntimeException("Variant is empty");
+                                    }
+                                }
+                            }, () -> {
+                                throw new RuntimeException("Type not found");
+                            });
+                } else {
+                    throw new RuntimeException("Call not found");
                 }
             }
         });
+
         byte[] bytes = new byte[2];
         bytes[0] = callTypeRef.get().byteValue();
         bytes[1] = callIndexRef.get().byteValue();

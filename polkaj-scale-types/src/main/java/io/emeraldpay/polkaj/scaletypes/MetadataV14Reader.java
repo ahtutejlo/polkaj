@@ -19,7 +19,6 @@ public class MetadataV14Reader implements ScaleReader<MetadataV14> {
     public static final ListReader<String> STRING_LIST_READER = new ListReader<>(ScaleCodecReader.STRING);
     public static final ListReader<Integer> INT_LIST_READER = new ListReader<>(ScaleCodecReader.COMPACT_UINT);
     public static final ListReader<Integer> BYTE_LIST_READER = new ListReader<>(ScaleCodecReader.UBYTE);
-    public static final ListReader<BigInteger> BIG_INT_LIST_READER = new ListReader<>(ScaleCodecReader.COMPACT_BIGINT);
 
     @Override
     public MetadataV14 read(ScaleCodecReader rdr) {
@@ -31,16 +30,6 @@ public class MetadataV14Reader implements ScaleReader<MetadataV14> {
         }
         result.setLookup(LOOKUP_READER.read(rdr));
         result.setPallets(PALLET_LIST_READER.read(rdr));
-        List<MetadataV14.Pallet> modules = result.getPallets();
-
-//        for (MetadataV14.Pallet m : modules) {
-//            List<MetadataV14.Calls> calls = m.getCalls();
-//            if (calls != null) {
-//                for (int j = 0; j < calls.size(); j++) {
-//                    calls.get(j).setType((m.getIndex() << 8) + j);
-//                }
-//            }
-//        }
         return result;
     }
 
