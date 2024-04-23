@@ -20,7 +20,7 @@ public class ListReader<T> implements ScaleReader<List<T>> {
         List<T> result = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             T read = rdr.read(scaleReader);
-            System.out.println("ListReader: " + read);
+//            System.out.println("ListReader: " + read);
             result.add(read);
         }
         return result;

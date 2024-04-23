@@ -8,7 +8,6 @@ import io.emeraldpay.polkaj.scale.reader.UnionReader;
 import io.emeraldpay.polkaj.scaletypes.v14.Lookup;
 
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.List;
 
 public class MetadataV14Reader implements ScaleReader<MetadataV14> {
@@ -50,10 +49,8 @@ public class MetadataV14Reader implements ScaleReader<MetadataV14> {
             public Lookup.Type read(ScaleCodecReader rdr) {
                 Lookup.Type result = new Lookup.Type();
                 BigInteger typeId = rdr.read(ScaleCodecReader.COMPACT_BIGINT);
-                System.out.println("\ntypes.id: " + typeId.toString());
                 result.setId(typeId.intValue());
                 Lookup.Type.TypeInfo typeInfo = TYPE_INFO_READER.read(rdr);
-                System.out.println("types.type: " + typeInfo);
                 result.setType(typeInfo);
                 return result;
             }
@@ -67,15 +64,11 @@ public class MetadataV14Reader implements ScaleReader<MetadataV14> {
                 public Lookup.Type.TypeInfo read(ScaleCodecReader rdr) {
                     Lookup.Type.TypeInfo result = new Lookup.Type.TypeInfo();
                     result.setPath(STRING_LIST_READER.read(rdr));
-                    System.out.println("types.type.path: " + result.getPath().toString());
                     List<Lookup.Type.TypeInfo.Param> paramList = PARAM_LIST_READER.read(rdr);
-                    System.out.println("types.type.params: " + paramList.toString());
                     result.setParams(paramList);
                     Lookup.Type.TypeInfo.Definition definition = DEFINITION_READER.read(rdr);
-                    System.out.println("types.type.definition: " + definition);
                     result.setDef(definition);
                     List<String> docs = STRING_LIST_READER.read(rdr);
-                    System.out.println("types.type.docs: " + docs.toString());
                     result.setDocs(docs);
                     return result;
                 }
@@ -208,6 +201,7 @@ public class MetadataV14Reader implements ScaleReader<MetadataV14> {
                     static class VariantReader implements ScaleReader<Lookup.Type.TypeInfo.Definition.Variant> {
 
                         public static final ListReader<Lookup.Type.TypeInfo.Definition.Variant.TypeDefVariant> VARIANT_LIST_READER = new ListReader<>(new TypeDefVariantReader());
+
                         @Override
                         public Lookup.Type.TypeInfo.Definition.Variant read(ScaleCodecReader rdr) {
                             Lookup.Type.TypeInfo.Definition.Variant result = new Lookup.Type.TypeInfo.Definition.Variant();
@@ -245,7 +239,6 @@ public class MetadataV14Reader implements ScaleReader<MetadataV14> {
         public MetadataV14.Pallet read(ScaleCodecReader rdr) {
             MetadataV14.Pallet result = new MetadataV14.Pallet();
             result.setName(rdr.readString());
-            System.out.println("\nPallet name: " + result.getName());
             rdr.readOptional(STORAGE_READER).ifPresent(result::setStorage);
             rdr.readOptional(CALLS_READER).ifPresent(result::setCalls);
             rdr.readOptional(EVENTS_READER).ifPresent(result::setEvents);
@@ -278,19 +271,14 @@ public class MetadataV14Reader implements ScaleReader<MetadataV14> {
         public MetadataV14.Storage.Entry read(ScaleCodecReader rdr) {
             MetadataV14.Storage.Entry result = new MetadataV14.Storage.Entry();
             String name = rdr.readString();
-            System.out.println("Storage entry name: " + name);
             result.setName(name);
             MetadataV14.Storage.Modifier modifier = MODIFIER_ENUM_READER.read(rdr);
-            System.out.println("Storage entry modifier: " + modifier);
             result.setModifier(modifier);
             MetadataV14.Storage.Type<?> type = rdr.read(TYPE_READER);
-            System.out.println("Storage entry type: " + type);
             result.setType(type);
             byte[] defaults = rdr.readByteArray();
-            System.out.println("Storage entry defaults: " + Arrays.toString(defaults));
             result.setDefaults(defaults);
             List<String> documentation = STRING_LIST_READER.read(rdr);
-            System.out.println("Storage entry documentation: " + documentation);
             result.setDocumentation(documentation);
             return result;
         }
