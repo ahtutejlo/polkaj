@@ -5,6 +5,7 @@ apply plugin: 'maven-publish'
 apply plugin: 'groovy'
 apply plugin: 'jacoco'
 apply plugin: 'com.jfrog.bintray'
+apply plugin: 'com.jfrog.artifactory'
 
 afterEvaluate {
     rootProject.tasks.coverageReport.additionalSourceDirs.setFrom rootProject.tasks.coverageReport.additionalSourceDirs.files + files(it.sourceSets.main.allSource.srcDirs)
@@ -142,4 +143,24 @@ bintray {
             }
         }
     }
+}
+
+artifactory {
+    contextUrl = 'https://mti-artifactory-dev01.mythical.work/artifactory' // base artifactory url
+    publish {
+        repository {
+            repoKey = 'mythical'   // Artifactory repository key to publish to
+            maven = true
+            defaults {
+                publications('mavenJava')
+            }
+            publishBuildInfo = false
+            publishArtifacts = true
+            publishPom = true
+        }
+    }
+}
+
+artifactoryPublish {
+    dependsOn jar
 }
