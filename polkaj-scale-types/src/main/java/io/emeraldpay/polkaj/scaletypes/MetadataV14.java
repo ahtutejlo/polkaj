@@ -62,6 +62,48 @@ public class MetadataV14 {
         return bytes;
     }
 
+    public byte[] findEventCallIndex(String palletName, String eventName) {
+        AtomicReference<Integer> callTypeRef = new AtomicReference();
+        AtomicReference<Integer> callIndexRef = new AtomicReference();
+        this.pallets.forEach((pallet) -> {
+            if (pallet.getName().equals(palletName)) {
+                callTypeRef.set(pallet.getIndex());
+                if (pallet.getEvents() == null) {
+                    throw new RuntimeException("Events not found");
+                }
+
+                int type = pallet.getEvents().getType();
+                this.lookup.getTypes().stream().filter((t) -> {
+                    return t.getId() == type;
+                }).findFirst().ifPresentOrElse((t) -> {
+                    Lookup.Type.TypeInfo.Definition def = t.getType().getDef();
+                    if (def.getVariant() != null) {
+                        List<Lookup.Type.TypeInfo.Definition.Variant.TypeDefVariant> variants = def.getVariant().getVariants();
+                        if (variants.isEmpty()) {
+                            throw new RuntimeException("Variant is empty");
+                        }
+
+                        variants.stream().filter((variant) -> {
+                            return variant.getName().equals(eventName);
+                        }).findFirst().ifPresentOrElse((variant) -> {
+                            callIndexRef.set(variant.getIndex());
+                        }, () -> {
+                            throw new RuntimeException("Variant not found");
+                        });
+                    }
+
+                }, () -> {
+                    throw new RuntimeException("Type not found");
+                });
+            }
+
+        });
+        byte[] bytes = new byte[2];
+        bytes[0] = callTypeRef.get().byteValue();
+        bytes[1] = callIndexRef.get().byteValue();
+        return bytes;
+    }
+
     public Integer getMagic() {
         return magic;
     }
